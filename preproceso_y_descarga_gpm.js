@@ -11,12 +11,13 @@
 // =================================================================================================== //
 var TRMM3B42 = ee.ImageCollection("TRMM/3B42")
 var GPMV06 = ee.ImageCollection("NASA/GPM_L3/IMERG_V06")
-var zoi = ee.FeatureCollection("users/jorgeperez/terra-i_trmm_mask")
+var zoi = ee.FeatureCollection("users/jorgeperez/gpm/terra-i_trmm_mask")
+var mask_trmm = ee.Image("users/jorgeperez/gpm/trmm_tif")
+var escale_mask = ee.Number(mask_trmm.projection().nominalScale())
 
 // =================================================================================================== //
 //                             CAMBIO EN FECHAS DE PROCESAMIENTO                                       //
 // =================================================================================================== //
-
 // --------------------------------------------------------------------------------------------------- //
 // En el siguiente paso, se debe cambiar la fecha y la de inicio y la fecha final                      //
 // startDateStringYear = año inicial                                                                   //
@@ -72,7 +73,7 @@ function gte0(image){
 function Resampled(image){
   var resampled = image.resample().reproject({
     crs: 'EPSG:4326',
-    scale: 27880.67412
+    scale: escale_mask
   });
   return resampled;
 }
@@ -81,7 +82,7 @@ function normalize_resample(image){
   var max = image.reduceRegion({
     reducer: ee.Reducer.max(),
     geometry: zoi,
-    scale: 27880.67412,
+    scale: escale_mask,
     maxPixels: 10000000000
     }
   );
@@ -96,14 +97,13 @@ function normalize_resample(image){
     }
   );
   return imagen_normalizada;
-} 
+}
 
 // =================================================================================================== //
 // =================================================================================================== //
 //                                        TEMPORALIDAD
 // =================================================================================================== //
 // =================================================================================================== //
-
 // --------------------------------------------------------------------------------------------------- //
 // nDay = cantidad de imágenes (cada 16 días) que se encuentran en un año.                             //
 // --------------------------------------------------------------------------------------------------- //
@@ -117,7 +117,6 @@ print('Cantidad de imágenes disponibles cada 16 días:',nDay16);
 //                                      FILTRADO DE COLECCIÓN
 // =================================================================================================== //
 // =================================================================================================== //
-
 // --------------------------------------------------------------------------------------------------- //
 // f1_GPMV06 = colección de imágenes filtradas de GPM versión 6                                        //
 // --------------------------------------------------------------------------------------------------- //
@@ -188,7 +187,7 @@ function exportCollection(collection,n){
     //print('id', id)
     var idNumber = ee.Number.parse(id).multiply(16).add(1)
     //print("idNumber",idNumber)
-    var idString = (idNumber.getInfo())
+    var idString = ("000" + (idNumber.getInfo())).slice(-3)
     print('idString', idString)
     var region = zoi;
     
@@ -198,8 +197,8 @@ function exportCollection(collection,n){
       folder: 'GPM',
       fileNamePrefix: 'gpm_' + startDateStringYear + '_' + idString,
       region: region,
-      scale: 27880.67412,
-      maxPixels: 10000000000
+      scale: escale_mask,
+      maxPixels: 100000000000
     });
   }
 }
